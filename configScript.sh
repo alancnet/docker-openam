@@ -1,5 +1,9 @@
+domain=openam.example.com
 adminPassword=Lifetime1
 agentPassword=Lifetime2
+
+echo Hacking local DNS
+if ! grep -q $domain /etc/hosts ; then (echo 127.0.0.1 $domain >> /etc/hosts); fi
 
 echo Starting tomcat6
 /etc/init.d/tomcat6 start
@@ -13,14 +17,14 @@ tail -F /var/log/tomcat6/catalina.out &
 sh -c 'tail -n +0 --pid=$$ -F /var/log/tomcat6/catalina.out | { sed "/Server startup in/ q" && kill $$ ;}'
 
 echo Starting up application
-curl -s -b cookies -c cookies "http://localhost:8080/openam/config/options.htm"
+curl -s -b cookies -c cookies "http://$domain:8080/openam/config/options.htm"
 
 echo Setting admin password
-curl -s -b cookies -c cookies --referer "http://localhost:8080/openam/config/options.htm" "http://localhost:8080/openam/config/defaultSummary.htm?actionLink=checkPasswords&ie7fix=3" -d "confirm=$adminPassword&password=$adminPassword&otherPassword=&type=admin"
+curl -s -b cookies -c cookies --referer "http://$domain:8080/openam/config/options.htm" "http://$domain:8080/openam/config/defaultSummary.htm?actionLink=checkPasswords&ie7fix=3" -d "confirm=$adminPassword&password=$adminPassword&otherPassword=&type=admin"
 
 echo
 echo Setting agent password
-curl -s -b cookies -c cookies --referer "http://localhost:8080/openam/config/options.htm" "http://localhost:8080/openam/config/defaultSummary.htm?actionLink=checkPasswords&ie7fix=3" -d "confirm=$agentPassword&password=$agentPassword&otherPassword=$adminPassword&type=agent"
+curl -s -b cookies -c cookies --referer "http://$domain:8080/openam/config/options.htm" "http://$domain:8080/openam/config/defaultSummary.htm?actionLink=checkPasswords&ie7fix=3" -d "confirm=$agentPassword&password=$agentPassword&otherPassword=$adminPassword&type=agent"
 
 echo
 echo Creating default config
@@ -34,7 +38,7 @@ echo Creating default config
 	cat /usr/share/tomcat6/openam/install.log
 ) & (
 	echo Executing!!!
-	curl -s -b cookies -c cookies --referer "http://localhost:8080/openam/config/options.htm" "http://localhost:8080/openam/config/defaultSummary.htm?actionLink=createDefaultConfig"
+	curl -s -b cookies -c cookies --referer "http://$domain:8080/openam/config/options.htm" "http://$domain:8080/openam/config/defaultSummary.htm?actionLink=createDefaultConfig"
 )
 
 echo
